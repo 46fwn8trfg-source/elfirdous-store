@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>متجر الفردوس للأعشاب</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+:root{
+--main:#2e7d32;
+--bg:#f1f8f5;
+}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:var(--bg);
+color:#333;
+}
+
+header{
+background:linear-gradient(135deg,#2e7d32,#1b5e20);
+padding:40px 20px;
+text-align:center;
+color:white;
+}
+
+header h1{
+margin:0;
+font-size:2.5rem;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.products-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+gap:25px;
+}
+
+.product-card{
+background:white;
+border-radius:18px;
+overflow:hidden;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+}
+
+.product-img{
+width:100%;
+height:220px;
+object-fit:cover;
+}
+
+.product-info{
+padding:15px;
+}
+
+.product-info h3{
+margin:0 0 10px;
+color:#1b5e20;
+}
+
+.price{
+font-size:1.3rem;
+font-weight:bold;
+color:#2e7d32;
+display:block;
+margin-top:10px;
+}
+
+.btn-buy{
+width:100%;
+padding:14px;
+border:none;
+background:#2e7d32;
+color:white;
+font-size:1rem;
+cursor:pointer;
+font-weight:bold;
+}
+
+.btn-buy:hover{
+background:#1b5e20;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+z-index:999;
+}
+
+.modal-content{
+background:white;
+padding:25px;
+border-radius:20px;
+width:90%;
+max-width:450px;
+position:relative;
+}
+
+.close-btn{
+position:absolute;
+left:15px;
+top:10px;
+font-size:28px;
+cursor:pointer;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:1px solid #ccc;
+border-radius:10px;
+box-sizing:border-box;
+}
+
+.submit-btn{
+width:100%;
+padding:14px;
+background:#e65100;
+color:white;
+border:none;
+border-radius:10px;
+font-size:1rem;
+font-weight:bold;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🌿 متجر الفردوس للأعشاب</h1>
+<p>أفضل الأعشاب والزيوت الطبيعية</p>
+</header>
+
+<div class="container">
+
+<h2 style="text-align:center;">منتجاتنا</h2>
+
+<div class="products-grid" id="products-list">
+<p>جاري تحميل المنتجات...</p>
+</div>
+
+</div>
+
+<div class="modal" id="orderModal">
+
+<div class="modal-content">
+
+<span class="close-btn" onclick="closeModal()">&times;</span>
+
+<h2>إتمام الطلب</h2>
+
+<p id="selectedProductText"></p>
+
+<input type="hidden" id="productInput">
+
+<input type="text" id="clientName" placeholder="اسمك الكامل">
+
+<input type="tel" id="clientPhone" placeholder="رقم الهاتف">
+
+<input type="text" id="clientAddress" placeholder="العنوان الكامل">
+
+<button class="submit-btn" onclick="submitOrder()">
+تأكيد الطلب
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+const supabaseUrl = 'https://qpvwcgaomjdffzmipaqb.supabase.co';
+
+const supabaseKey = 'sb_publishable_s_koPOOKAbXMefOrkVUf6g_UBvaNrI2';
+
+const supabase = window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+
+async function loadProducts() {
+
+const { data, error } = await supabase
+.from('products')
+.select('*');
+
+const grid = document.getElementById('products-list');
+
+grid.innerHTML = '';
+
+if(error){
+grid.innerHTML = '<p>حدث خطأ في تحميل المنتجات</p>';
+return;
+}
+
+if(data.length === 0){
+grid.innerHTML = '<p>لا توجد منتجات حالياً</p>';
+return;
+}
+
+data.forEach(prod => {
+
+const card = document.createElement('div');
+
+card.className = 'product-card';
+
+card.innerHTML = `
+<img src="${prod.image_path}" class="product-img">
+
+<div class="product-info">
+
+<h3>${prod.title}</h3>
+
+<p>${prod.description}</p>
+
+<span class="price">${prod.price} د.ج</span>
+
+</div>
+
+<button class="btn-buy"
+onclick="openModal('${prod.title}')">
+شراء الآن
+</button>
+`;
+
+grid.appendChild(card);
+
+});
+
+}
+
+loadProducts();
+
+function openModal(product){
+
+document.getElementById('orderModal').style.display='flex';
+
+document.getElementById('selectedProductText').innerText =
+'المنتج المحدد: ' + product;
+
+document.getElementById('productInput').value = product;
+
+}
+
+function closeModal(){
+
+document.getElementById('orderModal').style.display='none';
+
+}
+
+async function submitOrder(){
+
+const name =
+document.getElementById('clientName').value;
+
+const phone =
+document.getElementById('clientPhone').value;
+
+const address =
+document.getElementById('clientAddress').value;
+
+const product =
+document.getElementById('productInput').value;
+
+if(!name || !phone || !address){
+
+alert('يرجى ملء جميع الحقول');
+
+return;
+
+}
+
+const { error } = await supabase
+.from('orders')
+.insert([{
+name,
+phone,
+address,
+product
+}]);
+
+if(error){
+
+alert('حدث خطأ أثناء إرسال الطلب');
+
+return;
+
+}
+
+alert('تم إرسال الطلب بنجاح');
+
+closeModal();
+
+document.getElementById('clientName').value='';
+document.getElementById('clientPhone').value='';
+document.getElementById('clientAddress').value='';
+
+}
+
+</script>
+
+</body>
+</html>
