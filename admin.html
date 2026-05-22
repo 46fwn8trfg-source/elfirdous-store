@@ -5,36 +5,424 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>لوحة الإدارة</title>
+<title>لوحة إدارة متجر الفردوس</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <style>
 
 body{
-font-family:Arial;
-background:#f4f4f4;
+font-family:Arial,sans-serif;
+background-color:#f0f2f5;
+margin:0;
 padding:20px;
 }
 
-.container{
-max-width:600px;
+.admin-container{
+max-width:1100px;
 margin:auto;
+}
+
+.section{
 background:white;
 padding:25px;
 border-radius:15px;
+box-shadow:0 4px 6px rgba(0,0,0,0.05);
+margin-bottom:30px;
 }
 
-input,textarea{
+input,
+textarea,
+button{
 width:100%;
 padding:12px;
-margin:10px 0;
+margin:8px 0;
 border:1px solid #ccc;
-border-radius:10px;
+border-radius:8px;
 box-sizing:border-box;
+font-size:1rem;
 }
 
 button{
+background-color:#2e7d32;
+color:white;
+border:none;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{
+background:#1b5e20;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+background:white;
+}
+
+th,
+td{
+padding:12px;
+border:1px solid #ddd;
+text-align:right;
+}
+
+th{
+background:#2c3e50;
+color:white;
+}
+
+tr:nth-child(even){
+background:#f9f9f9;
+}
+
+.btn-delete{
+background:#c62828;
+color:white;
+padding:8px 12px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+.thumb-img{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:5px;
+}
+
+.login-box{
+max-width:400px;
+margin:80px auto;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
+
+.hidden{
+display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="loginPage" class="login-box">
+
+<h2>🔐 تسجيل دخول الأدمن</h2>
+
+<input type="email"
+id="email"
+placeholder="البريد الإلكتروني">
+
+<input type="password"
+id="password"
+placeholder="كلمة المرور">
+
+<button onclick="login()">
+دخول
+</button>
+
+</div>
+
+<div class="admin-container hidden" id="adminPanel">
+
+<h1>🎛️ لوحة إدارة متجر الفردوس</h1>
+
+<hr>
+
+<div class="section">
+
+<h2>➕ إضافة منتج جديد</h2>
+
+<input type="text"
+id="title"
+placeholder="اسم المنتج">
+
+<input type="text"
+id="price"
+placeholder="السعر">
+
+<textarea
+id="description"
+placeholder="وصف المنتج"
+rows="3"></textarea>
+
+<input type="text"
+id="image"
+placeholder="رابط صورة المنتج">
+
+<button onclick="addProduct()">
+نشر المنتج
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>📦 المنتجات الحالية</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>الصورة</th>
+<th>اسم المنتج</th>
+<th>السعر</th>
+<th>الحذف</th>
+</tr>
+
+</thead>
+
+<tbody id="productsTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>📥 الطلبات</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>رقم الطلب</th>
+<th>اسم الزبون</th>
+<th>الهاتف</th>
+<th>العنوان</th>
+<th>المنتج</th>
+</tr>
+
+</thead>
+
+<tbody id="ordersTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+const supabaseUrl =
+'https://qpvwcgaomjdffzmipaqb.supabase.co';
+
+const supabaseKey =
+'sb_publishable_s_koPOOKAbXMefOrkVUf6g_UBvaNrI2';
+
+const supabase =
+window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+
+async function login(){
+
+const email =
+document.getElementById('email').value;
+
+const password =
+document.getElementById('password').value;
+
+const { error } =
+await supabase.auth.signInWithPassword({
+email,
+password
+});
+
+if(error){
+
+alert('بيانات خاطئة');
+
+return;
+
+}
+
+document
+.getElementById('loginPage')
+.classList.add('hidden');
+
+document
+.getElementById('adminPanel')
+.classList.remove('hidden');
+
+loadProducts();
+loadOrders();
+
+}
+
+async function addProduct(){
+
+const title =
+document.getElementById('title').value;
+
+const price =
+document.getElementById('price').value;
+
+const description =
+document.getElementById('description').value;
+
+const image =
+document.getElementById('image').value;
+
+if(!title || !price || !description || !image){
+
+alert('املأ جميع الحقول');
+
+return;
+
+}
+
+const { error } =
+await supabase
+.from('products')
+.insert([{
+title,
+price,
+description,
+image_path:image
+}]);
+
+if(error){
+
+alert('حدث خطأ');
+
+console.log(error);
+
+return;
+
+}
+
+alert('تمت إضافة المنتج');
+
+loadProducts();
+
+document.getElementById('title').value='';
+document.getElementById('price').value='';
+document.getElementById('description').value='';
+document.getElementById('image').value='';
+
+}
+
+async function loadProducts(){
+
+const { data } =
+await supabase
+.from('products')
+.select('*');
+
+const table =
+document.getElementById('productsTable');
+
+table.innerHTML='';
+
+data.forEach(prod=>{
+
+table.innerHTML += `
+<tr>
+
+<td>
+<img src="${prod.image_path}"
+class="thumb-img">
+</td>
+
+<td>${prod.title}</td>
+
+<td>${prod.price} د.ج</td>
+
+<td>
+
+<button
+class="btn-delete"
+onclick="deleteProduct(${prod.id})">
+
+حذف
+
+</button>
+
+</td>
+
+</tr>
+`;
+
+});
+
+}
+
+async function deleteProduct(id){
+
+if(!confirm('هل تريد حذف المنتج؟'))
+return;
+
+await supabase
+.from('products')
+.delete()
+.eq('id',id);
+
+loadProducts();
+
+}
+
+async function loadOrders(){
+
+const { data } =
+await supabase
+.from('orders')
+.select('*')
+.order('id',{ascending:false});
+
+const table =
+document.getElementById('ordersTable');
+
+table.innerHTML='';
+
+data.forEach(ord=>{
+
+table.innerHTML += `
+<tr>
+
+<td>${ord.id}</td>
+
+<td>${ord.name}</td>
+
+<td>
+<a href="tel:${ord.phone}">
+${ord.phone}
+</a>
+</td>
+
+<td>${ord.address}</td>
+
+<td style="color:#e65100;font-weight:bold;">
+${ord.product}
+</td>
+
+</tr>
+`;
+
+});
+
+}
+
+</script>
+
+</body>
+</html>button{
 width:100%;
 padding:14px;
 background:#2e7d32;
